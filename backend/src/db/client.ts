@@ -6,8 +6,17 @@ import { config } from '../config.js';
 
 const { Pool } = pg;
 
+const useSsl =
+  config.databaseUrl.includes('render.com') ||
+  config.databaseUrl.includes('neon.tech') ||
+  config.databaseUrl.includes('supabase.co') ||
+  (!config.databaseUrl.includes('localhost') &&
+    !config.databaseUrl.includes('127.0.0.1') &&
+    config.isProduction);
+
 export const pool = new Pool({
   connectionString: config.databaseUrl,
+  ssl: useSsl ? { rejectUnauthorized: false } : undefined,
 });
 
 export async function initDb() {

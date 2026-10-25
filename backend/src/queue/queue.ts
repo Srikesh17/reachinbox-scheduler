@@ -2,11 +2,13 @@ import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { config } from '../config.js';
 
-export const redisConnection = new Redis({
-  host: config.redisHost,
-  port: config.redisPort,
-  maxRetriesPerRequest: null,
-});
+export const redisConnection = config.redisUrl
+  ? new Redis(config.redisUrl, { maxRetriesPerRequest: null })
+  : new Redis({
+      host: config.redisHost,
+      port: config.redisPort,
+      maxRetriesPerRequest: null,
+    });
 
 export const emailQueue = new Queue('email-scheduler', {
   connection: redisConnection,

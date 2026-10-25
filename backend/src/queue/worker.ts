@@ -11,17 +11,21 @@ interface EmailJobData {
   emailId: string;
 }
 
-const workerRedis = new Redis({
-  host: config.redisHost,
-  port: config.redisPort,
-  maxRetriesPerRequest: null,
-});
+const workerRedis = config.redisUrl
+  ? new Redis(config.redisUrl, { maxRetriesPerRequest: null })
+  : new Redis({
+      host: config.redisHost,
+      port: config.redisPort,
+      maxRetriesPerRequest: null,
+    });
 
-const limiterRedis = new Redis({
-  host: config.redisHost,
-  port: config.redisPort,
-  maxRetriesPerRequest: null,
-});
+const limiterRedis = config.redisUrl
+  ? new Redis(config.redisUrl, { maxRetriesPerRequest: null })
+  : new Redis({
+      host: config.redisHost,
+      port: config.redisPort,
+      maxRetriesPerRequest: null,
+    });
 
 let transporter: Transporter | null = null;
 

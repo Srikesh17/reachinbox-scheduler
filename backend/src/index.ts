@@ -14,7 +14,18 @@ app.set('trust proxy', 1);
 
 app.use(
   cors({
-    origin: [config.frontendUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        origin === config.frontendUrl ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1')
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
@@ -27,10 +38,11 @@ app.use(
     secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
+      sameSite: config.isProduction ? 'none' : 'lax',
+      secure: config.isProduction,
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
