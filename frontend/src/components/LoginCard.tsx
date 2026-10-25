@@ -31,7 +31,11 @@ export function LoginCard({ onLoginSuccess, onError }: LoginCardProps) {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_BASE}/api/auth/google`;
+    const origin =
+      typeof window !== 'undefined' && window.location.origin
+        ? window.location.origin
+        : 'https://reachinbox-scheduler-theta-nine.vercel.app';
+    window.location.href = `${API_BASE}/api/auth/google?redirect_to=${encodeURIComponent(origin)}`;
   };
 
   return (

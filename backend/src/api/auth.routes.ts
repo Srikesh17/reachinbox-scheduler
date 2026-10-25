@@ -19,6 +19,22 @@ declare module 'express-session' {
 
 export const authRouter = Router();
 
+function resolveFrontendOrigin(inputUrl?: string | null): string {
+  if (!inputUrl) {
+    return config.frontendUrl;
+  }
+  try {
+    const parsed = new URL(inputUrl);
+    if (parsed.hostname.includes('vercel.app')) {
+      return parsed.origin;
+    }
+    if (!config.isProduction && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')) {
+      return parsed.origin;
+    }
+  } catch {}
+  return config.frontendUrl;
+}
+
 const oauthClient = new OAuth2Client(
   config.googleClientId,
   config.googleClientSecret,
@@ -33,7 +49,17 @@ authRouter.get('/google', (req: Request, res: Response) => {
     return;
   }
 
-  const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const rawRedirect =
+    (typeof req.query.redirect_to === 'string' && req.query.redirect_to) ||
+    req.headers.referer ||
+    config.frontendUrl;
+
+  const returnTo = resolveFrontendOrigin(rawRedirect);
+  const statePayload = {
+    nonce: Math.random().toString(36).slice(2) + Date.now().toString(36),
+    returnTo,
+  };
+  const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
   req.session.oauthState = state;
 
   const authUrl = oauthClient.generateAuthUrl({
@@ -56,9 +82,19 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
       return;
     }
 
-    if (req.session?.oauthState && typeof state === 'string' && state !== req.session.oauthState) {
-      res.status(400).send('Invalid OAuth callback state. Please try logging in again.');
-      return;
+    let returnTo = config.frontendUrl;
+    if (typeof state === 'string') {
+      try {
+        const decoded = Buffer.from(state, 'base64url').toString('utf8');
+        const parsed = JSON.parse(decoded);
+        if (parsed?.returnTo) {
+          returnTo = resolveFrontendOrigin(parsed.returnTo);
+        }
+      } catch {}
+    }
+
+    if (config.isProduction && (returnTo.includes('localhost') || returnTo.includes('127.0.0.1'))) {
+      returnTo = 'https://reachinbox-scheduler-theta-nine.vercel.app';
     }
 
     const { tokens } = await oauthClient.getToken(code);
@@ -93,14 +129,27 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
         res.status(500).send('Session persistence error');
         return;
       }
-      const targetUrl = new URL(config.frontendUrl);
+      const targetUrl = new URL(returnTo);
       targetUrl.pathname = '/dashboard';
       targetUrl.searchParams.set('auth_data', token);
       res.redirect(targetUrl.toString());
     });
   } catch (error) {
     console.error('Google OAuth callback failed:', error);
-    const targetUrl = new URL(config.frontendUrl);
+    let errorReturnTo = config.frontendUrl;
+    if (typeof req.query.state === 'string') {
+      try {
+        const decoded = Buffer.from(req.query.state, 'base64url').toString('utf8');
+        const parsed = JSON.parse(decoded);
+        if (parsed?.returnTo) {
+          errorReturnTo = resolveFrontendOrigin(parsed.returnTo);
+        }
+      } catch {}
+    }
+    if (config.isProduction && (errorReturnTo.includes('localhost') || errorReturnTo.includes('127.0.0.1'))) {
+      errorReturnTo = 'https://reachinbox-scheduler-theta-nine.vercel.app';
+    }
+    const targetUrl = new URL(errorReturnTo);
     targetUrl.pathname = '/login';
     targetUrl.searchParams.set('error', 'oauth_failed');
     res.redirect(targetUrl.toString());

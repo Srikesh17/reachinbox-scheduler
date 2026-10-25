@@ -6,10 +6,21 @@ const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(currentDirectory, '../../.env') });
 dotenv.config({ path: path.resolve(currentDirectory, '../.env') });
 
+const isProd =
+  process.env.NODE_ENV === 'production' ||
+  process.env.RENDER === 'true' ||
+  Boolean(process.env.RENDER_EXTERNAL_URL);
+
+let defaultFrontend = 'https://reachinbox-scheduler-theta-nine.vercel.app';
+let configuredFrontend = process.env.FRONTEND_URL || defaultFrontend;
+if (isProd && (configuredFrontend.includes('localhost') || configuredFrontend.includes('127.0.0.1'))) {
+  configuredFrontend = defaultFrontend;
+}
+
 export const config = {
-  isProduction: process.env.NODE_ENV === 'production',
+  isProduction: isProd,
   port: Number(process.env.PORT || 4000),
-  frontendUrl: process.env.FRONTEND_URL || 'https://reachinbox-scheduler-theta-nine.vercel.app',
+  frontendUrl: configuredFrontend,
   databaseUrl: process.env.DATABASE_URL || 'postgresql://reachinbox:reachinbox@localhost:5432/reachinbox',
   redisUrl: process.env.REDIS_URL || '',
   redisHost: process.env.REDIS_HOST || '127.0.0.1',

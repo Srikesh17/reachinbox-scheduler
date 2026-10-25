@@ -145,6 +145,23 @@ export function App() {
   }, [updateRoute]);
 
   useEffect(() => {
+    if (!authChecking) {
+      if (!user) {
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          updateRoute('/login', true);
+        }
+      } else {
+        if (
+          typeof window !== 'undefined' &&
+          (window.location.pathname === '/' || window.location.pathname === '/login')
+        ) {
+          updateRoute('/dashboard', true);
+        }
+      }
+    }
+  }, [authChecking, user, updateRoute]);
+
+  useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname;
       if (path === '/login') {
