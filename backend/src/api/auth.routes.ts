@@ -76,42 +76,31 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
       throw new Error('Google account email is missing');
     }
 
-    req.session.user = {
+    const userPayload: UserSession = {
       id: payload.sub,
       name: payload.name || payload.email,
       email: payload.email,
       picture: payload.picture || '',
     };
+
+    req.session.user = userPayload;
     delete req.session.oauthState;
+
+    const token = Buffer.from(JSON.stringify(userPayload)).toString('base64url');
 
     req.session.save((err) => {
       if (err) {
         res.status(500).send('Session persistence error');
         return;
       }
-      res.redirect(config.frontendUrl);
+      const targetUrl = new URL(config.frontendUrl);
+      targetUrl.searchParams.set('auth_data', token);
+      res.redirect(targetUrl.toString());
     });
   } catch (error) {
     console.error('Google OAuth callback failed:', error);
     res.redirect(`${config.frontendUrl}?error=oauth_failed`);
   }
-});
-
-authRouter.post('/demo', (req: Request, res: Response) => {
-  req.session.user = {
-    id: 'usr_oliver_brown',
-    name: 'Oliver Brown',
-    email: 'oliver.brown@domain.io',
-    picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
-  };
-
-  req.session.save((err) => {
-    if (err) {
-      res.status(500).json({ error: 'Could not create demo session' });
-      return;
-    }
-    res.json({ user: req.session.user });
-  });
 });
 
 authRouter.post('/login', (req: Request, res: Response) => {
@@ -124,24 +113,46 @@ authRouter.post('/login', (req: Request, res: Response) => {
   const namePart = email.split('@')[0] || 'User';
   const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
 
-  req.session.user = {
+  const userPayload: UserSession = {
     id: `usr_${Date.now()}`,
     name: displayName,
     email: email.trim().toLowerCase(),
     picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=00a854&color=fff`,
   };
 
+  req.session.user = userPayload;
+
   req.session.save((err) => {
     if (err) {
       res.status(500).json({ error: 'Could not create session' });
       return;
     }
-    res.json({ user: req.session.user });
+    const token = Buffer.from(JSON.stringify(userPayload)).toString('base64url');
+    res.json({ user: req.session.user, token });
   });
 });
 
 authRouter.get('/me', (req: Request, res: Response) => {
-  res.json({ user: req.session.user || null });
+  if (req.session?.user) {
+    const token = Buffer.from(JSON.stringify(req.session.user)).toString('base64url');
+    res.json({ user: req.session.user, token });
+    return;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.slice(7);
+      const json = Buffer.from(token, 'base64url').toString('utf-8');
+      const user = JSON.parse(json);
+      if (user && user.email) {
+        res.json({ user, token });
+        return;
+      }
+    } catch {}
+  }
+
+  res.json({ user: null });
 });
 
 authRouter.post('/logout', (req: Request, res: Response) => {
@@ -150,15 +161,29 @@ authRouter.post('/logout', (req: Request, res: Response) => {
       res.status(500).json({ error: 'Logout failed' });
       return;
     }
-    res.clearCookie('connect.sid');
+    res.clearCookie('reachinbox.sid');
     res.status(204).end();
   });
 });
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.session.user) {
-    res.status(401).json({ error: 'Authentication required' });
-    return;
+  if (req.session?.user) {
+    return next();
   }
-  next();
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.slice(7);
+      const json = Buffer.from(token, 'base64url').toString('utf-8');
+      const user = JSON.parse(json);
+      if (user && user.email) {
+        req.session = (req.session || {}) as typeof req.session;
+        req.session.user = user;
+        return next();
+      }
+    } catch {}
+  }
+
+  res.status(401).json({ error: 'Authentication required' });
 }

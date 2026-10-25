@@ -63,12 +63,47 @@ export function App() {
   }, [user]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const authData = urlParams.get('auth_data');
+      if (authData) {
+        try {
+          const raw = atob(authData.replace(/-/g, '+').replace(/_/g, '/'));
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.email) {
+            localStorage.setItem('reachinbox_user', JSON.stringify(parsed));
+            localStorage.setItem('reachinbox_token', authData);
+            setUser(parsed);
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch {}
+      } else {
+        const cached = localStorage.getItem('reachinbox_user');
+        if (cached) {
+          try {
+            setUser(JSON.parse(cached));
+          } catch {}
+        }
+      }
+    }
+
     fetchCurrentUser()
       .then((currUser) => {
-        setUser(currUser);
+        if (currUser) {
+          setUser(currUser);
+          localStorage.setItem('reachinbox_user', JSON.stringify(currUser));
+        } else {
+          const cached = localStorage.getItem('reachinbox_user');
+          if (!cached) {
+            setUser(null);
+          }
+        }
       })
       .catch(() => {
-        setUser(null);
+        const cached = localStorage.getItem('reachinbox_user');
+        if (!cached) {
+          setUser(null);
+        }
       })
       .finally(() => {
         setAuthChecking(false);
@@ -84,12 +119,12 @@ export function App() {
   const handleLogout = async () => {
     try {
       await logoutUser();
-      setUser(null);
-      setSelectedEmail(null);
-      setActiveView('list');
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Logout failed');
-    }
+    } catch {}
+    localStorage.removeItem('reachinbox_user');
+    localStorage.removeItem('reachinbox_token');
+    setUser(null);
+    setSelectedEmail(null);
+    setActiveView('list');
   };
 
   const handleScheduledSuccess = (count: number) => {

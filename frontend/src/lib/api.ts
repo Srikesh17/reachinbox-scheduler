@@ -13,13 +13,24 @@ export const API_BASE =
     : 'http://localhost:4000');
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('reachinbox_token')
+      : null;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((options?.headers as Record<string, string>) || {}),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers || {}),
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -39,14 +50,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export async function fetchCurrentUser(): Promise<User | null> {
-  const data = await request<{ user: User | null }>('/api/auth/me');
-  return data.user;
-}
-
-export async function loginDemoUser(): Promise<User> {
-  const data = await request<{ user: User }>('/api/auth/demo', {
-    method: 'POST',
-  });
+  const data = await request<{ user: User | null; token?: string }>('/api/auth/me');
+  if (data.token && typeof window !== 'undefined') {
+    localStorage.setItem('reachinbox_token', data.token);
+  }
   return data.user;
 }
 
@@ -54,10 +61,14 @@ export async function loginEmailUser(
   email: string,
   password?: string
 ): Promise<User> {
-  const data = await request<{ user: User }>('/api/auth/login', {
+  const data = await request<{ user: User; token?: string }>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
+  if (data.token && typeof window !== 'undefined') {
+    localStorage.setItem('reachinbox_token', data.token);
+    localStorage.setItem('reachinbox_user', JSON.stringify(data.user));
+  }
   return data.user;
 }
 
