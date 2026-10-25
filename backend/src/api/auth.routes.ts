@@ -94,12 +94,16 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
         return;
       }
       const targetUrl = new URL(config.frontendUrl);
+      targetUrl.pathname = '/dashboard';
       targetUrl.searchParams.set('auth_data', token);
       res.redirect(targetUrl.toString());
     });
   } catch (error) {
     console.error('Google OAuth callback failed:', error);
-    res.redirect(`${config.frontendUrl}?error=oauth_failed`);
+    const targetUrl = new URL(config.frontendUrl);
+    targetUrl.pathname = '/login';
+    targetUrl.searchParams.set('error', 'oauth_failed');
+    res.redirect(targetUrl.toString());
   }
 });
 

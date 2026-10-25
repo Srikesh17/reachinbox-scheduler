@@ -14,12 +14,27 @@ import { EmailTable } from './components/EmailTable.js';
 import { ComposeModal } from './components/ComposeModal.js';
 import { EmailDetailModal } from './components/EmailDetailModal.js';
 
+function getInitialTab(): 'scheduled' | 'sent' {
+  if (typeof window !== 'undefined' && window.location.pathname.includes('/sent')) {
+    return 'sent';
+  }
+  return 'scheduled';
+}
+
+function getInitialView(): 'list' | 'compose' | 'detail' {
+  if (typeof window !== 'undefined') {
+    if (window.location.pathname.includes('/compose')) return 'compose';
+    if (window.location.pathname.includes('/email/')) return 'detail';
+  }
+  return 'list';
+}
+
 export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
 
-  const [currentTab, setCurrentTab] = useState<'scheduled' | 'sent'>('scheduled');
-  const [activeView, setActiveView] = useState<'list' | 'compose' | 'detail'>('list');
+  const [currentTab, setCurrentTab] = useState<'scheduled' | 'sent'>(getInitialTab);
+  const [activeView, setActiveView] = useState<'list' | 'compose' | 'detail'>(getInitialView);
 
   const [scheduledEmails, setScheduledEmails] = useState<EmailItem[]>([]);
   const [sentEmails, setSentEmails] = useState<EmailItem[]>([]);
@@ -32,6 +47,16 @@ export function App() {
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const updateRoute = useCallback((path: string, replace = false) => {
+    if (typeof window !== 'undefined') {
+      if (replace) {
+        window.history.replaceState({}, '', path);
+      } else if (window.location.pathname !== path) {
+        window.history.pushState({}, '', path);
+      }
+    }
+  }, []);
 
   const loadAllEmails = useCallback(async (isRefresh = false) => {
     if (!user) return;
@@ -74,14 +99,18 @@ export function App() {
             localStorage.setItem('reachinbox_user', JSON.stringify(parsed));
             localStorage.setItem('reachinbox_token', authData);
             setUser(parsed);
-            window.history.replaceState({}, document.title, window.location.pathname);
+            updateRoute('/dashboard', true);
           }
         } catch {}
       } else {
         const cached = localStorage.getItem('reachinbox_user');
         if (cached) {
           try {
-            setUser(JSON.parse(cached));
+            const parsedUser = JSON.parse(cached);
+            setUser(parsedUser);
+            if (window.location.pathname === '/' || window.location.pathname === '/login') {
+              updateRoute('/dashboard', true);
+            }
           } catch {}
         }
       }
@@ -92,10 +121,14 @@ export function App() {
         if (currUser) {
           setUser(currUser);
           localStorage.setItem('reachinbox_user', JSON.stringify(currUser));
+          if (window.location.pathname === '/' || window.location.pathname === '/login') {
+            updateRoute('/dashboard', true);
+          }
         } else {
           const cached = localStorage.getItem('reachinbox_user');
           if (!cached) {
             setUser(null);
+            updateRoute('/login', true);
           }
         }
       })
@@ -103,11 +136,38 @@ export function App() {
         const cached = localStorage.getItem('reachinbox_user');
         if (!cached) {
           setUser(null);
+          updateRoute('/login', true);
         }
       })
       .finally(() => {
         setAuthChecking(false);
       });
+  }, [updateRoute]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/login') {
+        return;
+      }
+      if (path.includes('/compose')) {
+        setActiveView('compose');
+        setSelectedEmail(null);
+      } else if (path.includes('/sent')) {
+        setActiveView('list');
+        setCurrentTab('sent');
+        setSelectedEmail(null);
+      } else if (path.includes('/email/')) {
+        setActiveView('detail');
+      } else {
+        setActiveView('list');
+        setCurrentTab('scheduled');
+        setSelectedEmail(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   useEffect(() => {
@@ -125,6 +185,7 @@ export function App() {
     setUser(null);
     setSelectedEmail(null);
     setActiveView('list');
+    updateRoute('/login');
   };
 
   const handleScheduledSuccess = (count: number) => {
@@ -132,6 +193,7 @@ export function App() {
     setTimeout(() => setToastMessage(null), 5000);
     setActiveView('list');
     setCurrentTab('scheduled');
+    updateRoute('/dashboard/scheduled');
     void loadAllEmails();
   };
 
@@ -178,6 +240,7 @@ export function App() {
           onLoginSuccess={(loggedUser) => {
             setUser(loggedUser);
             setErrorMessage(null);
+            updateRoute('/dashboard');
           }}
           onError={(msg) => setErrorMessage(msg)}
         />
@@ -220,10 +283,12 @@ export function App() {
           setCurrentTab(tab);
           setActiveView('list');
           setSelectedEmail(null);
+          updateRoute(tab === 'sent' ? '/dashboard/sent' : '/dashboard/scheduled');
         }}
         onOpenCompose={() => {
           setActiveView('compose');
           setSelectedEmail(null);
+          updateRoute('/dashboard/compose');
         }}
         onLogout={handleLogout}
         scheduledCount={stats.scheduled}
@@ -234,7 +299,10 @@ export function App() {
         {activeView === 'compose' ? (
           <ComposeModal
             currentUser={user}
-            onClose={() => setActiveView('list')}
+            onClose={() => {
+              setActiveView('list');
+              updateRoute(currentTab === 'sent' ? '/dashboard/sent' : '/dashboard/scheduled');
+            }}
             onScheduled={handleScheduledSuccess}
             onError={(msg) => setErrorMessage(msg)}
           />
@@ -244,6 +312,7 @@ export function App() {
             onBack={() => {
               setActiveView('list');
               setSelectedEmail(null);
+              updateRoute(currentTab === 'sent' ? '/dashboard/sent' : '/dashboard/scheduled');
             }}
           />
         ) : (
@@ -262,8 +331,12 @@ export function App() {
               onSelectEmail={(email) => {
                 setSelectedEmail(email);
                 setActiveView('detail');
+                updateRoute(`/dashboard/email/${email.id}`);
               }}
-              onComposeClick={() => setActiveView('compose')}
+              onComposeClick={() => {
+                setActiveView('compose');
+                updateRoute('/dashboard/compose');
+              }}
             />
           </div>
         )}
