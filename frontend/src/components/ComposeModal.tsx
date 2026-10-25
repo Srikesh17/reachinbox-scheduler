@@ -124,7 +124,7 @@ export function ComposeModal({
     setScheduledDateStr(localIso);
   };
 
-  const handleSubmit = async (e?: FormEvent) => {
+  const handleSubmit = async (e?: FormEvent, overrideStartAt?: string) => {
     if (e) e.preventDefault();
     onError('');
 
@@ -148,16 +148,19 @@ export function ComposeModal({
       return;
     }
 
-    const chosenDate = new Date(scheduledDateStr);
-    if (Number.isNaN(chosenDate.getTime())) {
-      onError('Invalid scheduled date and time.');
-      return;
-    }
+    let finalStartAt = overrideStartAt;
+    if (!finalStartAt) {
+      const chosenDate = new Date(scheduledDateStr);
+      if (Number.isNaN(chosenDate.getTime())) {
+        onError('Invalid scheduled date and time.');
+        return;
+      }
 
-    const finalStartAt =
-      chosenDate.getTime() <= Date.now() + 5000
-        ? new Date().toISOString()
-        : chosenDate.toISOString();
+      finalStartAt =
+        chosenDate.getTime() <= Date.now() + 5000
+          ? new Date().toISOString()
+          : chosenDate.toISOString();
+    }
 
     setIsSubmitting(true);
     try {
@@ -221,9 +224,20 @@ export function ComposeModal({
 
           <button
             type="button"
+            onClick={() => void handleSubmit(undefined, new Date().toISOString())}
+            disabled={isSubmitting}
+            className="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-semibold"
+            title="Send immediately"
+          >
+            Send Now
+          </button>
+
+          <button
+            type="button"
             onClick={() => void handleSubmit()}
             disabled={isSubmitting}
             className="compose-send-later-pill-btn rounded-pill px-3 py-1 fw-semibold"
+            title="Schedule for selected time"
           >
             {isSubmitting ? 'Scheduling...' : 'Send Later'}
           </button>
@@ -246,8 +260,8 @@ export function ComposeModal({
                 <button
                   type="button"
                   onClick={() => {
-                    handlePresetSelect('now');
                     setSendLaterOpen(false);
+                    void handleSubmit(undefined, new Date().toISOString());
                   }}
                   className="popover-preset-item border-0 text-start p-2 rounded small text-success fw-semibold"
                 >

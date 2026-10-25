@@ -79,19 +79,6 @@ export const emailWorker = new Worker<EmailJobData>(
       return;
     }
 
-    const overdueMs = Date.now() - new Date(email.scheduled_at).getTime();
-    if (overdueMs > 30000) {
-      await pool.query(
-        `UPDATE emails
-         SET status = 'failed',
-             failure_reason = 'Delivery deadline exceeded: delayed more than 30 seconds past scheduled time',
-             updated_at = NOW()
-         WHERE id = $1 AND status != 'sent'`,
-        [emailId]
-      );
-      return;
-    }
-
     const allowedHourly = Math.min(
       Number(email.hourly_limit) || config.maxEmailsPerHour,
       config.maxEmailsPerHour,
@@ -110,6 +97,11 @@ export const emailWorker = new Worker<EmailJobData>(
          SET status = 'scheduled', updated_at = NOW()
          WHERE id = $1 AND status != 'sent'`,
         [emailId]
+      );
+      await enqueueEmailJob(
+        emailId,
+        new Date(Date.now() + Math.max(5000, rateResult.retryAfterMs)),
+        true
       );
       return;
     }
@@ -224,8 +216,9 @@ export async function reconcileScheduledEmails() {
   try {
     await pool.query(
       `UPDATE emails
-       SET status = 'scheduled', updated_at = NOW()
-       WHERE status = 'processing'`
+       SET status = 'scheduled', failure_reason = NULL, updated_at = NOW()
+       WHERE status = 'processing'
+          OR (status = 'failed' AND failure_reason LIKE '%deadline exceeded%')`
     );
 
     try {
@@ -258,11 +251,8 @@ export function startBackgroundSweep() {
     try {
       await pool.query(
         `UPDATE emails
-         SET status = 'failed',
-             failure_reason = 'Delivery deadline exceeded: delayed more than 30 seconds past scheduled time',
-             updated_at = NOW()
-         WHERE status = 'scheduled'
-           AND scheduled_at < NOW() - INTERVAL '35 seconds'`
+         SET status = 'scheduled', updated_at = NOW()
+         WHERE status = 'processing' AND updated_at < NOW() - INTERVAL '2 minutes'`
       );
 
       const dueEmails = await pool.query(
@@ -270,7 +260,7 @@ export function startBackgroundSweep() {
          FROM emails
          WHERE status = 'scheduled' AND scheduled_at <= NOW()
          ORDER BY scheduled_at ASC
-         LIMIT 25`
+         LIMIT 50`
       );
 
       for (const row of dueEmails.rows) {
