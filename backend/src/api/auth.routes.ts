@@ -51,12 +51,13 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     const code = req.query.code;
     const state = req.query.state;
 
-    if (
-      typeof code !== 'string' ||
-      typeof state !== 'string' ||
-      state !== req.session.oauthState
-    ) {
-      res.status(400).send('Invalid OAuth callback request. Please try logging in again.');
+    if (typeof code !== 'string') {
+      res.status(400).send('Invalid OAuth callback request. Missing authorization code.');
+      return;
+    }
+
+    if (req.session?.oauthState && typeof state === 'string' && state !== req.session.oauthState) {
+      res.status(400).send('Invalid OAuth callback state. Please try logging in again.');
       return;
     }
 
