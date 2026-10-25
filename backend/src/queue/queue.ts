@@ -23,7 +23,11 @@ export const emailQueue = new Queue('email-scheduler', {
   },
 });
 
-export async function enqueueEmailJob(emailId: string | number, scheduledAt: Date) {
+export async function enqueueEmailJob(
+  emailId: string | number,
+  scheduledAt: Date,
+  force = false
+) {
   const delay = Math.max(0, scheduledAt.getTime() - Date.now());
   const jobId = `email-${emailId}`;
 
@@ -31,7 +35,7 @@ export async function enqueueEmailJob(emailId: string | number, scheduledAt: Dat
     const existing = await emailQueue.getJob(jobId);
     if (existing) {
       const state = await existing.getState();
-      if (state === 'completed' || state === 'failed') {
+      if (force || state === 'completed' || state === 'failed' || delay === 0) {
         await existing.remove();
       } else {
         return existing;

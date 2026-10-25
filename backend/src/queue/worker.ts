@@ -5,7 +5,7 @@ import type { Transporter } from 'nodemailer';
 import { pool } from '../db/client.js';
 import { config } from '../config.js';
 import { checkAndConsumeHourlyLimit, acquireSendGapLock } from '../rateLimiter/hourlyLimiter.js';
-import { enqueueEmailJob } from './queue.js';
+import { enqueueEmailJob, emailQueue } from './queue.js';
 
 interface EmailJobData {
   emailId: string;
@@ -45,6 +45,9 @@ async function getTransporter(): Promise<Transporter> {
     tls: {
       rejectUnauthorized: false,
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 5000,
+    socketTimeout: 15000,
   });
 
   return transporter;
@@ -117,7 +120,7 @@ export const emailWorker = new Worker<EmailJobData>(
         ? `"${displayName}" <${config.smtpUser}>`
         : (email.sender || config.emailFrom);
 
-      const info = await activeTransporter.sendMail({
+      const sendPromise = activeTransporter.sendMail({
         from: fromHeader,
         to: email.recipient,
         replyTo: email.sender || config.emailFrom,
@@ -125,6 +128,12 @@ export const emailWorker = new Worker<EmailJobData>(
         subject: email.subject,
         text: email.body,
       });
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('SMTP transmission timed out')), 20000);
+      });
+
+      const info = await Promise.race([sendPromise, timeoutPromise]);
 
       const previewUrl = nodemailer.getTestMessageUrl(info) || info.messageId || '';
 
@@ -196,6 +205,11 @@ export async function reconcileScheduledEmails() {
        WHERE status = 'processing'`
     );
 
+    try {
+      await emailQueue.clean(0, 1000, 'active');
+      await emailQueue.clean(0, 1000, 'wait');
+    } catch {}
+
     const pendingResult = await pool.query(
       `SELECT id, scheduled_at
        FROM emails
@@ -204,7 +218,7 @@ export async function reconcileScheduledEmails() {
     );
 
     for (const row of pendingResult.rows) {
-      await enqueueEmailJob(row.id, new Date(row.scheduled_at));
+      await enqueueEmailJob(row.id, new Date(row.scheduled_at), true);
     }
   } catch (err) {
     console.error('[Worker] Startup reconciliation error:', err);
@@ -224,14 +238,14 @@ export function startBackgroundSweep() {
          FROM emails
          WHERE status = 'scheduled' AND scheduled_at <= NOW()
          ORDER BY scheduled_at ASC
-         LIMIT 20`
+         LIMIT 25`
       );
 
       for (const row of dueEmails.rows) {
-        await enqueueEmailJob(row.id, new Date(row.scheduled_at));
+        await enqueueEmailJob(row.id, new Date(row.scheduled_at), true);
       }
     } catch {}
-  }, 2500);
+  }, 2000);
 }
 
 export async function closeWorker() {
