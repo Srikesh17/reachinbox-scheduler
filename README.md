@@ -1,6 +1,15 @@
 # ReachInbox Full-Stack Email Job Scheduler
 
-Production-grade email scheduling service and dashboard built with **TypeScript**, **Express.js**, **BullMQ**, **Redis**, **PostgreSQL**, and **React**. Designed to process outreach campaigns reliably under high load, survive server restarts without losing or duplicating jobs, enforce strict multi-worker rate limits, and provide a dashboard interface faithful to the ReachInbox design.
+Production-grade email scheduling service and dashboard built with **TypeScript**, **Express.js**, **BullMQ**, **Redis**, **PostgreSQL**, and **React**. Designed to process outreach campaigns reliably under high load, survive server restarts without losing or duplicating jobs, enforce strict multi-worker rate limits, and provide a dashboard interface faithful to the ReachInbox Figma design.
+
+---
+
+## Live Deployments & Repository Access
+
+- **Production Frontend (Vercel)**: [https://reachinbox-scheduler-theta-nine.vercel.app](https://reachinbox-scheduler-theta-nine.vercel.app)
+- **Production Backend API (Render)**: [https://reachinbox-backend-pf01.onrender.com](https://reachinbox-backend-pf01.onrender.com)
+- **GitHub Repository**: [https://github.com/Srikesh17/reachinbox-scheduler.git](https://github.com/Srikesh17/reachinbox-scheduler.git)
+- **Reviewers Access**: Access granted to `Mitrajit` and `Yadav036`.
 
 ---
 

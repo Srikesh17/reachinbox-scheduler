@@ -149,11 +149,14 @@ export const emailWorker = new Worker<EmailJobData>(
         text: email.body,
       });
 
+      let timer: NodeJS.Timeout | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('SMTP transmission timed out')), 20000);
+        timer = setTimeout(() => reject(new Error('SMTP transmission timed out after 30s')), 30000);
       });
 
-      const info = await Promise.race([sendPromise, timeoutPromise]);
+      const info = await Promise.race([sendPromise, timeoutPromise]).finally(() => {
+        if (timer) clearTimeout(timer);
+      });
 
       const previewUrl = nodemailer.getTestMessageUrl(info) || info.messageId || '';
 
@@ -193,7 +196,7 @@ export const emailWorker = new Worker<EmailJobData>(
                failure_reason = $2,
                updated_at = NOW()
            WHERE id = $1 AND status = 'processing'`,
-          [emailId, `Attempt ${job.attemptsMade} failed, retrying...`]
+          [emailId, `Attempt ${job.attemptsMade} failed: ${message}`]
         );
       }
       throw error;
@@ -259,7 +262,7 @@ export function startBackgroundSweep() {
              failure_reason = 'Delivery deadline exceeded: delayed more than 30 seconds past scheduled time',
              updated_at = NOW()
          WHERE status = 'scheduled'
-           AND scheduled_at < NOW() - INTERVAL '30 seconds'`
+           AND scheduled_at < NOW() - INTERVAL '35 seconds'`
       );
 
       const dueEmails = await pool.query(
