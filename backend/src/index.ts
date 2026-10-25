@@ -6,7 +6,12 @@ import { initDb, pool } from './db/client.js';
 import { authRouter } from './api/auth.routes.js';
 import { scheduleRouter } from './api/schedule.routes.js';
 import { emailQueue } from './queue/queue.js';
-import { emailWorker, reconcileScheduledEmails, closeWorker } from './queue/worker.js';
+import {
+  emailWorker,
+  reconcileScheduledEmails,
+  startBackgroundSweep,
+  closeWorker,
+} from './queue/worker.js';
 
 const app = express();
 
@@ -88,6 +93,9 @@ async function startServer() {
 
     await reconcileScheduledEmails();
     console.log('[Queue] Startup reconciliation complete');
+
+    startBackgroundSweep();
+    console.log('[Queue] Background scheduler sweep activated');
 
     const server = app.listen(config.port, () => {
       console.log(`[API] Server running on http://localhost:${config.port}`);

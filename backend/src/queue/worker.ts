@@ -1,4 +1,4 @@
-import { Worker, DelayedError } from 'bullmq';
+import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
@@ -88,8 +88,7 @@ export const emailWorker = new Worker<EmailJobData>(
          WHERE id = $1 AND status != 'sent'`,
         [emailId]
       );
-      await job.moveToDelayed(Date.now() + rateResult.retryAfterMs, token);
-      throw new DelayedError();
+      return;
     }
 
     const gapResult = await acquireSendGapLock(
@@ -99,17 +98,9 @@ export const emailWorker = new Worker<EmailJobData>(
     );
 
     if (!gapResult.acquired) {
-      const hourWindow = Math.floor(Date.now() / 3600000);
-      await limiterRedis.decr(`rate:${email.sender}:${hourWindow}`);
-
-      await pool.query(
-        `UPDATE emails
-         SET status = 'scheduled', updated_at = NOW()
-         WHERE id = $1 AND status != 'sent'`,
-        [emailId]
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(gapResult.retryAfterMs, 2500))
       );
-      await job.moveToDelayed(Date.now() + gapResult.retryAfterMs, token);
-      throw new DelayedError();
     }
 
     await pool.query(
@@ -220,7 +211,34 @@ export async function reconcileScheduledEmails() {
   }
 }
 
+let sweepTimer: NodeJS.Timeout | null = null;
+
+export function startBackgroundSweep() {
+  if (sweepTimer) {
+    return;
+  }
+  sweepTimer = setInterval(async () => {
+    try {
+      const dueEmails = await pool.query(
+        `SELECT id, scheduled_at
+         FROM emails
+         WHERE status = 'scheduled' AND scheduled_at <= NOW()
+         ORDER BY scheduled_at ASC
+         LIMIT 20`
+      );
+
+      for (const row of dueEmails.rows) {
+        await enqueueEmailJob(row.id, new Date(row.scheduled_at));
+      }
+    } catch {}
+  }, 2500);
+}
+
 export async function closeWorker() {
+  if (sweepTimer) {
+    clearInterval(sweepTimer);
+    sweepTimer = null;
+  }
   await emailWorker.close();
   await workerRedis.quit();
   await limiterRedis.quit();

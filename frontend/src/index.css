@@ -525,9 +525,10 @@ button {
   white-space: nowrap;
 }
 
+.green-sent-badge,
 .gray-sent-badge {
-  background-color: #f3f4f6;
-  color: #4b5563;
+  background-color: #dcfce7;
+  color: #15803d;
   border-radius: 9999px;
   padding: 3px 10px;
   font-size: 11.5px;

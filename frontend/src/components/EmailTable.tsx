@@ -112,7 +112,7 @@ export function EmailTable({
                   className={`rounded-pill px-2 py-1 small fw-semibold text-nowrap ${
                     email.status === 'failed'
                       ? 'red-failed-badge'
-                      : 'gray-sent-badge'
+                      : 'green-sent-badge'
                   }`}
                 >
                   <span>{email.status === 'failed' ? 'Failed' : 'Sent'}</span>
