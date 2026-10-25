@@ -9,7 +9,7 @@ dotenv.config({ path: path.resolve(currentDirectory, '../.env') });
 export const config = {
   isProduction: process.env.NODE_ENV === 'production',
   port: Number(process.env.PORT || 4000),
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendUrl: process.env.FRONTEND_URL || 'https://reachinbox-scheduler-theta-nine.vercel.app',
   databaseUrl: process.env.DATABASE_URL || 'postgresql://reachinbox:reachinbox@localhost:5432/reachinbox',
   redisUrl: process.env.REDIS_URL || '',
   redisHost: process.env.REDIS_HOST || '127.0.0.1',
@@ -19,7 +19,7 @@ export const config = {
   maxEmailsPerHour: Math.min(100, Math.max(1, Number(process.env.MAX_EMAILS_PER_HOUR || 100))),
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-  googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:4000/api/auth/google/callback',
+  googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || 'https://reachinbox-backend-pf01.onrender.com/api/auth/google/callback',
   sessionSecret: process.env.SESSION_SECRET || 'reachinbox-scheduler-session-secret-key-prod',
   smtpHost: process.env.SMTP_HOST || 'smtp.ethereal.email',
   smtpPort: Number(process.env.SMTP_PORT || 587),

@@ -12,12 +12,18 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+const allowedOrigins = [
+  'https://reachinbox-scheduler-theta-nine.vercel.app',
+  'https://reachinbox-backend-pf01.onrender.com',
+  config.frontendUrl,
+];
+
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (
-        origin === config.frontendUrl ||
+        allowedOrigins.includes(origin) ||
         origin.endsWith('.vercel.app') ||
         origin.includes('localhost') ||
         origin.includes('127.0.0.1')

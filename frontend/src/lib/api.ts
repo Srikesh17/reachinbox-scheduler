@@ -7,7 +7,10 @@ import type {
 } from '../types/email.js';
 
 export const API_BASE =
-  import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
+    ? 'https://reachinbox-backend-pf01.onrender.com'
+    : 'http://localhost:4000');
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
