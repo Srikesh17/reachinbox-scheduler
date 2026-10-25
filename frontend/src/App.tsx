@@ -188,9 +188,14 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      void loadAllEmails();
-    }
+    if (!user) return;
+    void loadAllEmails();
+
+    const interval = setInterval(() => {
+      void loadAllEmails(true);
+    }, 2500);
+
+    return () => clearInterval(interval);
   }, [user, loadAllEmails]);
 
   const handleLogout = async () => {
@@ -301,6 +306,7 @@ export function App() {
           setActiveView('list');
           setSelectedEmail(null);
           updateRoute(tab === 'sent' ? '/dashboard/sent' : '/dashboard/scheduled');
+          void loadAllEmails(true);
         }}
         onOpenCompose={() => {
           setActiveView('compose');

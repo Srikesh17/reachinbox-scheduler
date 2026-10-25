@@ -113,10 +113,13 @@ scheduleRouter.post('/schedule', async (req: Request, res: Response) => {
 
       const emailRow = insertResult.rows[0];
       createdEmails.push(emailRow);
-      await enqueueEmailJob(emailRow.id, scheduledTime);
     }
 
     await client.query('COMMIT');
+
+    for (const emailRow of createdEmails) {
+      await enqueueEmailJob(emailRow.id, new Date(emailRow.scheduled_at));
+    }
 
     res.status(201).json({
       message: `Successfully scheduled ${createdEmails.length} email(s).`,

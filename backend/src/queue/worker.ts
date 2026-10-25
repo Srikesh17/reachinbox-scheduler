@@ -58,17 +58,37 @@ export const emailWorker = new Worker<EmailJobData>(
   async (job, token) => {
     const { emailId } = job.data;
 
-    const emailQuery = await pool.query(
+    let emailQuery = await pool.query(
       'SELECT * FROM emails WHERE id = $1',
       [emailId]
     );
 
     if (emailQuery.rowCount === 0) {
-      return;
+      await new Promise((res) => setTimeout(res, 250));
+      emailQuery = await pool.query(
+        'SELECT * FROM emails WHERE id = $1',
+        [emailId]
+      );
+      if (emailQuery.rowCount === 0) {
+        return;
+      }
     }
 
     const email = emailQuery.rows[0];
     if (email.status === 'sent') {
+      return;
+    }
+
+    const overdueMs = Date.now() - new Date(email.scheduled_at).getTime();
+    if (overdueMs > 30000) {
+      await pool.query(
+        `UPDATE emails
+         SET status = 'failed',
+             failure_reason = 'Delivery deadline exceeded: delayed more than 30 seconds past scheduled time',
+             updated_at = NOW()
+         WHERE id = $1 AND status != 'sent'`,
+        [emailId]
+      );
       return;
     }
 
@@ -233,6 +253,15 @@ export function startBackgroundSweep() {
   }
   sweepTimer = setInterval(async () => {
     try {
+      await pool.query(
+        `UPDATE emails
+         SET status = 'failed',
+             failure_reason = 'Delivery deadline exceeded: delayed more than 30 seconds past scheduled time',
+             updated_at = NOW()
+         WHERE status = 'scheduled'
+           AND scheduled_at < NOW() - INTERVAL '30 seconds'`
+      );
+
       const dueEmails = await pool.query(
         `SELECT id, scheduled_at
          FROM emails

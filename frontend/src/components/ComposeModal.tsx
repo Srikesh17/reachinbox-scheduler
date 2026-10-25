@@ -92,8 +92,14 @@ export function ComposeModal({
     const now = new Date();
     let target = new Date();
 
-    if (preset === '10s') {
+    if (preset === 'now') {
+      target = new Date();
+    } else if (preset === '10s') {
       target = new Date(Date.now() + 10 * 1000);
+    } else if (preset === '1m') {
+      target = new Date(Date.now() + 60 * 1000);
+    } else if (preset === '5m') {
+      target = new Date(Date.now() + 5 * 60 * 1000);
     } else if (preset === 'tomorrow') {
       target.setDate(now.getDate() + 1);
       target.setHours(9, 0, 0, 0);
@@ -146,13 +152,18 @@ export function ComposeModal({
       return;
     }
 
+    const finalStartAt =
+      chosenDate.getTime() <= Date.now() + 5000
+        ? new Date().toISOString()
+        : chosenDate.toISOString();
+
     setIsSubmitting(true);
     try {
       const response = await scheduleEmails({
         subject: subject.trim(),
         body: body.trim(),
         recipients: combinedRecipients,
-        startAt: chosenDate.toISOString(),
+        startAt: finalStartAt,
         delaySeconds,
         hourlyLimit,
         sender,
@@ -229,14 +240,50 @@ export function ComposeModal({
               <div className="popover-presets-list d-flex flex-column gap-1 mb-3">
                 <button
                   type="button"
-                  onClick={() => handlePresetSelect('10s')}
+                  onClick={() => {
+                    handlePresetSelect('now');
+                    setSendLaterOpen(false);
+                  }}
+                  className="popover-preset-item border-0 text-start p-2 rounded small text-success fw-semibold"
+                >
+                  ⚡ Send Now (Immediately)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handlePresetSelect('10s');
+                    setSendLaterOpen(false);
+                  }}
                   className="popover-preset-item highlight-quick border-0 text-start p-2 rounded small"
                 >
                   ⚡ Send in 10 seconds (Quick Test)
                 </button>
                 <button
                   type="button"
-                  onClick={() => handlePresetSelect('tomorrow')}
+                  onClick={() => {
+                    handlePresetSelect('1m');
+                    setSendLaterOpen(false);
+                  }}
+                  className="popover-preset-item border-0 text-start p-2 rounded small text-secondary"
+                >
+                  Send in 1 minute
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handlePresetSelect('5m');
+                    setSendLaterOpen(false);
+                  }}
+                  className="popover-preset-item border-0 text-start p-2 rounded small text-secondary"
+                >
+                  Send in 5 minutes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handlePresetSelect('tomorrow');
+                    setSendLaterOpen(false);
+                  }}
                   className="popover-preset-item border-0 text-start p-2 rounded small text-secondary"
                 >
                   Tomorrow
