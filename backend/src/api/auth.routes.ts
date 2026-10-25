@@ -72,7 +72,7 @@ authRouter.get('/google', (req: Request, res: Response) => {
   res.redirect(authUrl);
 });
 
-authRouter.get('/google/callback', async (req: Request, res: Response) => {
+authRouter.get(['/google/callback', '/callback'], async (req: Request, res: Response) => {
   try {
     const code = req.query.code;
     const state = req.query.state;
