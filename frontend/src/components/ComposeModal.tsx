@@ -23,6 +23,7 @@ export function ComposeModal({
   const [body, setBody] = useState('');
   const [recipientsInput, setRecipientsInput] = useState('');
   const [recipientsList, setRecipientsList] = useState<string[]>([]);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [delaySeconds, setDelaySeconds] = useState(2);
   const [hourlyLimit, setHourlyLimit] = useState(100);
 
@@ -64,6 +65,7 @@ export function ComposeModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploadedFileName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
       const content = String(event.target?.result || '');
@@ -198,11 +200,14 @@ export function ComposeModal({
         <div className="compose-top-actions-right position-relative d-flex align-items-center gap-3">
           <button
             type="button"
+            onClick={() => fileInputRef.current?.click()}
             className="compose-action-icon-btn with-badge position-relative border-0 bg-transparent text-secondary p-2"
-            title="Attachments"
+            title="Upload Files (CSV or TXT)"
           >
             <i className="fa-solid fa-paperclip"></i>
-            <span className="icon-tiny-badge">1</span>
+            <span className="icon-tiny-badge">
+              {uploadedFileName ? '1' : '+'}
+            </span>
           </button>
 
           <button
@@ -401,13 +406,33 @@ export function ComposeModal({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="upload-list-trigger-btn border-0 bg-transparent text-success small fw-semibold d-flex align-items-center gap-1"
+              className="btn btn-outline-success btn-sm rounded-pill d-inline-flex align-items-center gap-1 px-3 py-1 fw-semibold text-nowrap"
             >
-              <i className="fa-solid fa-arrow-up-from-bracket"></i>
-              <span>Upload List</span>
+              <i className="fa-solid fa-cloud-arrow-up"></i>
+              <span>Upload Files</span>
             </button>
           </div>
         </div>
+
+        {uploadedFileName && (
+          <div className="uploaded-file-banner d-inline-flex align-items-center gap-2 px-3 py-1 bg-success-subtle border border-success rounded-pill small text-success align-self-start">
+            <i className="fa-solid fa-file-csv"></i>
+            <span className="fw-semibold">
+              {uploadedFileName} ({recipientsList.length} recipients imported)
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setUploadedFileName(null);
+                setRecipientsList([]);
+              }}
+              className="border-0 bg-transparent text-danger p-0 ms-1 fw-bold"
+              title="Remove uploaded file"
+            >
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        )}
 
         <div className="compose-field-row d-flex align-items-center border-bottom pb-2">
           <label className="compose-field-label text-muted small fw-semibold">Subject</label>
@@ -490,6 +515,17 @@ export function ComposeModal({
             <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="Code">
               <i className="fa-solid fa-code"></i>
             </button>
+            <div className="ms-auto">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn btn-sm btn-light border d-inline-flex align-items-center gap-1 small text-dark rounded-pill px-3"
+                title="Upload file or recipient list"
+              >
+                <i className="fa-solid fa-paperclip text-success"></i>
+                <span>Upload File</span>
+              </button>
+            </div>
           </div>
 
           <textarea

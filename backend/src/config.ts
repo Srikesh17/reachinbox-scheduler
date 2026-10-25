@@ -17,6 +17,12 @@ if (isProd && (configuredFrontend.includes('localhost') || configuredFrontend.in
   configuredFrontend = defaultFrontend;
 }
 
+let defaultGoogleCallback = 'https://reachinbox-backend-pf01.onrender.com/api/auth/google/callback';
+let configuredCallback = process.env.GOOGLE_CALLBACK_URL || defaultGoogleCallback;
+if (isProd && (configuredCallback.includes('localhost') || configuredCallback.includes('127.0.0.1'))) {
+  configuredCallback = defaultGoogleCallback;
+}
+
 export const config = {
   isProduction: isProd,
   port: Number(process.env.PORT || 4000),
@@ -30,7 +36,7 @@ export const config = {
   maxEmailsPerHour: Math.min(100, Math.max(1, Number(process.env.MAX_EMAILS_PER_HOUR || 100))),
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-  googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || 'https://reachinbox-backend-pf01.onrender.com/api/auth/google/callback',
+  googleCallbackUrl: configuredCallback,
   sessionSecret: process.env.SESSION_SECRET || 'reachinbox-scheduler-session-secret-key-prod',
   smtpHost: process.env.SMTP_HOST || 'smtp.ethereal.email',
   smtpPort: Number(process.env.SMTP_PORT || 587),
