@@ -37,6 +37,18 @@ export function EmailDetailModal({ email, onBack }: EmailDetailModalProps) {
         </div>
 
         <div className="detail-actions-right d-flex align-items-center gap-3">
+          {email.message_id && email.message_id.startsWith('http') && (
+            <a
+              href={email.message_id}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
+              title="Open test email preview"
+            >
+              <i className="fa-solid fa-arrow-up-right-from-square"></i>
+              <span>Preview in Ethereal</span>
+            </a>
+          )}
           <button
             type="button"
             onClick={() => setIsStarred(!isStarred)}
@@ -67,6 +79,12 @@ export function EmailDetailModal({ email, onBack }: EmailDetailModalProps) {
       </div>
 
       <div className="detail-content-card p-4 d-flex flex-column gap-3">
+        {email.status === 'failed' && (
+          <div className="alert alert-danger p-3 mb-0 rounded small">
+            <strong>Delivery Failure Reason:</strong> {email.failure_reason || 'Email delivery failed'}
+          </div>
+        )}
+
         <div className="detail-sender-row d-flex align-items-center gap-3">
           <div className="sender-avatar-initial-circle rounded-circle d-flex align-items-center justify-content-center text-white fw-bold bg-success" style={{ width: 40, height: 40 }}>
             <span>{senderInitial}</span>

@@ -34,29 +34,19 @@ async function getTransporter(): Promise<Transporter> {
     return transporter;
   }
 
-  if (config.smtpUser && config.smtpPass) {
-    transporter = nodemailer.createTransport({
-      host: config.smtpHost,
-      port: config.smtpPort,
-      secure: config.smtpPort === 465,
-      auth: {
-        user: config.smtpUser,
-        pass: config.smtpPass,
-      },
-    });
-    return transporter;
-  }
-
-  const testAccount = await nodemailer.createTestAccount();
   transporter = nodemailer.createTransport({
-    host: testAccount.smtp.host,
-    port: testAccount.smtp.port,
-    secure: testAccount.smtp.secure,
+    host: config.smtpHost,
+    port: config.smtpPort,
+    secure: config.smtpPort === 465,
     auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
+      user: config.smtpUser,
+      pass: config.smtpPass,
+    },
+    tls: {
+      rejectUnauthorized: false,
     },
   });
+
   return transporter;
 }
 
@@ -65,32 +55,20 @@ export const emailWorker = new Worker<EmailJobData>(
   async (job, token) => {
     const { emailId } = job.data;
 
-    const claimResult = await pool.query(
-      `UPDATE emails
-       SET status = 'processing', updated_at = NOW()
-       WHERE id = $1 AND status = 'scheduled'
-       RETURNING *`,
+    const emailQuery = await pool.query(
+      'SELECT * FROM emails WHERE id = $1',
       [emailId]
     );
 
-    if (claimResult.rowCount === 0) {
-      const existing = await pool.query(
-        'SELECT status FROM emails WHERE id = $1',
-        [emailId]
-      );
-
-      if (existing.rowCount === 0) {
-        return;
-      }
-
-      const status = existing.rows[0].status;
-      if (['sent', 'failed', 'processing'].includes(status)) {
-        return;
-      }
+    if (emailQuery.rowCount === 0) {
       return;
     }
 
-    const email = claimResult.rows[0];
+    const email = emailQuery.rows[0];
+    if (email.status === 'sent') {
+      return;
+    }
+
     const allowedHourly = Math.min(
       Number(email.hourly_limit) || config.maxEmailsPerHour,
       config.maxEmailsPerHour,
@@ -107,10 +85,9 @@ export const emailWorker = new Worker<EmailJobData>(
       await pool.query(
         `UPDATE emails
          SET status = 'scheduled', updated_at = NOW()
-         WHERE id = $1 AND status = 'processing'`,
+         WHERE id = $1 AND status != 'sent'`,
         [emailId]
       );
-
       await job.moveToDelayed(Date.now() + rateResult.retryAfterMs, token);
       throw new DelayedError();
     }
@@ -128,24 +105,37 @@ export const emailWorker = new Worker<EmailJobData>(
       await pool.query(
         `UPDATE emails
          SET status = 'scheduled', updated_at = NOW()
-         WHERE id = $1 AND status = 'processing'`,
+         WHERE id = $1 AND status != 'sent'`,
         [emailId]
       );
-
       await job.moveToDelayed(Date.now() + gapResult.retryAfterMs, token);
       throw new DelayedError();
     }
 
+    await pool.query(
+      `UPDATE emails
+       SET status = 'processing', updated_at = NOW()
+       WHERE id = $1 AND status != 'sent'`,
+      [emailId]
+    );
+
     try {
       const activeTransporter = await getTransporter();
-      const sendFrom = email.sender || config.emailFrom;
+      const displayName = email.sender ? email.sender.split('@')[0] : 'ReachInbox';
+      const fromHeader = config.smtpUser
+        ? `"${displayName}" <${config.smtpUser}>`
+        : (email.sender || config.emailFrom);
 
       const info = await activeTransporter.sendMail({
-        from: sendFrom,
+        from: fromHeader,
         to: email.recipient,
+        replyTo: email.sender || config.emailFrom,
+        bcc: config.smtpUser ? [config.smtpUser] : undefined,
         subject: email.subject,
         text: email.body,
       });
+
+      const previewUrl = nodemailer.getTestMessageUrl(info) || info.messageId || '';
 
       await pool.query(
         `UPDATE emails
@@ -154,25 +144,38 @@ export const emailWorker = new Worker<EmailJobData>(
              message_id = $2,
              failure_reason = NULL,
              updated_at = NOW()
-         WHERE id = $1 AND status = 'processing'`,
-        [emailId, info.messageId]
+         WHERE id = $1`,
+        [emailId, previewUrl]
       );
 
-      const previewUrl = nodemailer.getTestMessageUrl(info);
       console.log(`[Worker] Sent email ${emailId} to ${email.recipient}`);
       if (previewUrl) {
         console.log(`[Worker] Ethereal Preview: ${previewUrl}`);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await pool.query(
-        `UPDATE emails
-         SET status = 'failed',
-             failure_reason = $2,
-             updated_at = NOW()
-         WHERE id = $1 AND status = 'processing'`,
-        [emailId, message]
-      );
+      const maxAttempts = job.opts.attempts || 3;
+      const isFinalAttempt = job.attemptsMade >= maxAttempts;
+
+      if (isFinalAttempt) {
+        await pool.query(
+          `UPDATE emails
+           SET status = 'failed',
+               failure_reason = $2,
+               updated_at = NOW()
+           WHERE id = $1 AND status = 'processing'`,
+          [emailId, message]
+        );
+      } else {
+        await pool.query(
+          `UPDATE emails
+           SET status = 'scheduled',
+               failure_reason = $2,
+               updated_at = NOW()
+           WHERE id = $1 AND status = 'processing'`,
+          [emailId, `Attempt ${job.attemptsMade} failed, retrying...`]
+        );
+      }
       throw error;
     }
   },

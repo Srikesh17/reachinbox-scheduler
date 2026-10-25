@@ -34,8 +34,8 @@ export const config = {
   sessionSecret: process.env.SESSION_SECRET || 'reachinbox-scheduler-session-secret-key-prod',
   smtpHost: process.env.SMTP_HOST || 'smtp.ethereal.email',
   smtpPort: Number(process.env.SMTP_PORT || 587),
-  smtpUser: process.env.SMTP_USER || '',
-  smtpPass: process.env.SMTP_PASS || '',
-  emailFrom: process.env.EMAIL_FROM || 'ReachInbox Demo <no-reply@example.com>',
+  smtpUser: process.env.SMTP_USER || 'bethel.bergnaum87@ethereal.email',
+  smtpPass: process.env.SMTP_PASS || 'EwZEtUKsjD1kBZCCT2',
+  emailFrom: process.env.EMAIL_FROM || 'bethel.bergnaum87@ethereal.email',
   runWorkerInApp: process.env.RUN_WORKER !== 'false',
 };

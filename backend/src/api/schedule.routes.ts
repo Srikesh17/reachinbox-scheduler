@@ -209,7 +209,7 @@ scheduleRouter.get('/stats', async (req: Request, res: Response) => {
     const row = statsResult.rows[0];
     res.json({
       scheduled: Number(row.scheduled_count || 0),
-      sent: Number(row.sent_count || 0),
+      sent: Number(row.sent_count || 0) + Number(row.failed_count || 0),
       failed: Number(row.failed_count || 0),
     });
   } catch (error) {

@@ -102,6 +102,11 @@ export function EmailTable({
                   <i className="fa-regular fa-clock" style={{ fontSize: '11px' }}></i>
                   <span>{formatScheduledTimestamp(email.scheduled_at)}</span>
                 </div>
+              ) : email.status === 'processing' ? (
+                <div className="rounded-pill px-2 py-1 small fw-semibold text-nowrap bg-primary-subtle text-primary">
+                  <i className="fa-solid fa-spinner fa-spin me-1"></i>
+                  <span>Processing</span>
+                </div>
               ) : (
                 <div
                   className={`rounded-pill px-2 py-1 small fw-semibold text-nowrap ${
@@ -123,7 +128,20 @@ export function EmailTable({
               </div>
             </div>
 
-            <div className="email-row-right d-flex align-items-center ms-2">
+            <div className="email-row-right d-flex align-items-center gap-2 ms-2">
+              {email.message_id && email.message_id.startsWith('http') && (
+                <a
+                  href={email.message_id}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="btn btn-sm btn-outline-success py-0 px-2 small text-nowrap"
+                  title="Open test email preview"
+                >
+                  <i className="fa-solid fa-arrow-up-right-from-square me-1"></i>
+                  <span>Preview</span>
+                </a>
+              )}
               <button
                 type="button"
                 onClick={(e) => toggleStar(email.id, e)}
