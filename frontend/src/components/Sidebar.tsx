@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { Clock, Send, ChevronDown, Plus, LogOut } from 'lucide-react';
 import type { User } from '../types/email.js';
 
 interface SidebarProps {
@@ -35,14 +34,14 @@ export function Sidebar({
   }, []);
 
   return (
-    <aside className="app-sidebar">
-      <div className="sidebar-brand-row">
-        <span className="brand-logo-text">QNB</span>
+    <aside className="app-sidebar border-end bg-white d-flex flex-column p-3">
+      <div className="sidebar-brand-row mb-3 px-1">
+        <span className="brand-logo-text fw-bold fs-4 text-dark">Inbox</span>
       </div>
 
-      <div className="sidebar-profile-box" ref={menuRef}>
+      <div className="sidebar-profile-box position-relative mb-3" ref={menuRef}>
         <div
-          className="profile-info-row"
+          className="profile-info-row d-flex align-items-center gap-2 p-2 rounded cursor-pointer"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           <img
@@ -53,73 +52,81 @@ export function Sidebar({
               )}&background=00a854&color=fff`
             }
             alt={user.name}
-            className="profile-avatar-img"
+            className="profile-avatar-img rounded-circle"
+            width={36}
+            height={36}
           />
-          <div className="profile-text-group">
-            <span className="profile-name-text">{user.name}</span>
-            <span className="profile-email-text">{user.email}</span>
+          <div className="profile-text-group d-flex flex-column overflow-hidden flex-grow-1">
+            <span className="profile-name-text fw-semibold small text-dark text-truncate">
+              {user.name}
+            </span>
+            <span className="profile-email-text text-muted text-truncate" style={{ fontSize: '11px' }}>
+              {user.email}
+            </span>
           </div>
-          <ChevronDown size={16} className="profile-chevron-icon" />
+          <i className="fa-solid fa-chevron-down text-muted small"></i>
         </div>
 
         {menuOpen && (
-          <div className="profile-dropdown-menu">
+          <div className="profile-dropdown-menu position-absolute bg-white border rounded shadow-sm p-1 z-3 w-100">
             <button
               type="button"
               onClick={() => {
                 setMenuOpen(false);
                 onLogout();
               }}
-              className="logout-action-btn"
+              className="logout-action-btn w-100 d-flex align-items-center gap-2 p-2 text-danger border-0 bg-transparent rounded small"
             >
-              <LogOut size={15} />
+              <i className="fa-solid fa-arrow-right-from-bracket"></i>
               <span>Sign Out</span>
             </button>
           </div>
         )}
       </div>
 
-      <div className="compose-btn-row">
+      <div className="compose-btn-row mb-4">
         <button
           type="button"
           onClick={onOpenCompose}
-          className="sidebar-compose-pill-btn"
+          className="sidebar-compose-pill-btn w-100 d-flex align-items-center justify-content-center gap-2 rounded-pill fw-semibold"
         >
-          <Plus size={16} />
+          <i className="fa-solid fa-plus"></i>
           <span>Compose</span>
         </button>
       </div>
 
-      <div className="sidebar-nav-section">
-        <div className="nav-section-title">CORE</div>
+      <div className="sidebar-nav-section d-flex flex-column gap-1">
+        <div className="nav-section-title text-muted text-uppercase fw-bold px-2" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
+          CORE
+        </div>
 
-        <nav className="nav-items-list">
+        <nav className="nav-items-list d-flex flex-column gap-1 mt-1">
           <button
             type="button"
             onClick={() => onTabChange('scheduled')}
-            className={`nav-tab-item ${
-              currentTab === 'scheduled' ? 'active-nav-tab' : ''
+            className={`nav-tab-item d-flex align-items-center justify-content-between p-2 rounded-pill border-0 ${
+              currentTab === 'scheduled' ? 'active-nav-tab' : 'bg-transparent text-secondary'
             }`}
           >
-            <div className="nav-tab-left">
-              <Clock size={17} />
-              <span>Scheduled</span>
+            <div className="nav-tab-left d-flex align-items-center gap-2">
+              <i className="fa-regular fa-clock"></i>
+              <span className="small">Scheduled</span>
             </div>
-            <span className="nav-tab-badge">{scheduledCount}</span>
+            <span className="nav-tab-badge badge rounded-pill text-dark">{scheduledCount}</span>
           </button>
 
           <button
             type="button"
             onClick={() => onTabChange('sent')}
-            className={`nav-tab-item ${
-              currentTab === 'sent' ? 'active-nav-tab' : ''
+            className={`nav-tab-item d-flex align-items-center justify-content-between p-2 rounded-pill border-0 ${
+              currentTab === 'sent' ? 'active-nav-tab' : 'bg-transparent text-secondary'
             }`}
           >
-            <div className="nav-tab-left">
-              <Send size={17} />
-              <span>Sent</span>
+            <div className="nav-tab-left d-flex align-items-center gap-2">
+              <i className="fa-solid fa-paper-plane"></i>
+              <span className="small">Sent</span>
             </div>
-            <span className="nav-tab-badge">{sentCount}</span>
+            <span className="nav-tab-badge badge rounded-pill text-dark">{sentCount}</span>
           </button>
         </nav>
       </div>

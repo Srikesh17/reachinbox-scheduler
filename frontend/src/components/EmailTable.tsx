@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Clock, Star, Inbox } from 'lucide-react';
 import type { EmailItem } from '../types/email.js';
 
 interface EmailTableProps {
@@ -44,25 +43,25 @@ export function EmailTable({
 
   if (isLoading) {
     return (
-      <div className="email-table-loading-container">
-        <div className="loading-spinner-ring" />
-        <span className="loading-state-text">Loading emails...</span>
+      <div className="email-table-loading-container d-flex flex-column align-items-center justify-content-center p-5 text-muted">
+        <div className="loading-spinner-ring mb-3" />
+        <span className="small">Loading emails...</span>
       </div>
     );
   }
 
   if (emails.length === 0) {
     return (
-      <div className="email-table-empty-container">
-        <div className="empty-icon-circle">
-          <Inbox size={28} />
+      <div className="email-table-empty-container text-center p-5">
+        <div className="empty-icon-circle mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle bg-light text-muted" style={{ width: 56, height: 56 }}>
+          <i className="fa-solid fa-inbox fs-4"></i>
         </div>
-        <h3 className="empty-title-text">
+        <h5 className="empty-title-text fw-bold text-dark mb-1">
           {currentTab === 'scheduled'
             ? 'No scheduled emails found'
             : 'No sent emails yet'}
-        </h3>
-        <p className="empty-description-text">
+        </h5>
+        <p className="empty-description-text text-muted small mb-3">
           {currentTab === 'scheduled'
             ? 'Schedule your outreach campaigns to see them queued here.'
             : 'Processed emails and delivery records will appear here.'}
@@ -71,7 +70,7 @@ export function EmailTable({
           <button
             type="button"
             onClick={onComposeClick}
-            className="empty-compose-btn"
+            className="empty-compose-btn btn btn-success rounded-pill px-4"
           >
             Compose New Email
           </button>
@@ -81,7 +80,7 @@ export function EmailTable({
   }
 
   return (
-    <div className="email-rows-list-wrapper">
+    <div className="email-rows-list-wrapper d-flex flex-column">
       {emails.map((email) => {
         const isStarred = Boolean(starredMap[email.id]);
         const recipientName =
@@ -91,54 +90,53 @@ export function EmailTable({
           <div
             key={email.id}
             onClick={() => onSelectEmail(email)}
-            className="email-row-card"
+            className="email-row-card d-flex align-items-center justify-content-between px-4 py-3 border-bottom"
           >
-            <div className="email-row-left">
-              <span className="email-to-label">
-                To: <span className="email-to-name">{recipientName}</span>
+            <div className="email-row-left d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+              <span className="email-to-label text-muted small text-nowrap">
+                To: <span className="email-to-name fw-semibold text-dark">{recipientName}</span>
               </span>
 
               {currentTab === 'scheduled' ? (
-                <div className="orange-scheduled-badge">
-                  <Clock size={12} className="badge-clock-icon" />
+                <div className="orange-scheduled-badge d-flex align-items-center gap-1 rounded-pill px-2 py-1 small fw-semibold text-nowrap">
+                  <i className="fa-regular fa-clock" style={{ fontSize: '11px' }}></i>
                   <span>{formatScheduledTimestamp(email.scheduled_at)}</span>
                 </div>
               ) : (
                 <div
-                  className={
+                  className={`rounded-pill px-2 py-1 small fw-semibold text-nowrap ${
                     email.status === 'failed'
                       ? 'red-failed-badge'
                       : 'gray-sent-badge'
-                  }
+                  }`}
                 >
                   <span>{email.status === 'failed' ? 'Failed' : 'Sent'}</span>
                 </div>
               )}
 
-              <div className="email-subject-snippet-group">
-                <span className="email-row-subject">{email.subject}</span>
-                <span className="email-subject-separator">-</span>
-                <span className="email-row-snippet">
+              <div className="email-subject-snippet-group d-flex align-items-center gap-2 overflow-hidden text-nowrap small">
+                <span className="email-row-subject fw-semibold text-dark">{email.subject}</span>
+                <span className="email-subject-separator text-muted">-</span>
+                <span className="email-row-snippet text-muted text-truncate">
                   {email.body.replace(/\s+/g, ' ').slice(0, 100)}
                 </span>
               </div>
             </div>
 
-            <div className="email-row-right">
+            <div className="email-row-right d-flex align-items-center ms-2">
               <button
                 type="button"
                 onClick={(e) => toggleStar(email.id, e)}
-                className="star-toggle-btn"
+                className="star-toggle-btn border-0 bg-transparent p-1"
                 title={isStarred ? 'Unstar' : 'Star'}
               >
-                <Star
-                  size={16}
+                <i
                   className={
                     isStarred
-                      ? 'star-icon-filled'
-                      : 'star-icon-outline'
+                      ? 'fa-solid fa-star text-warning'
+                      : 'fa-regular fa-star text-secondary'
                   }
-                />
+                ></i>
               </button>
             </div>
           </div>

@@ -1,22 +1,5 @@
 import { useState, useRef } from 'react';
 import type { FormEvent, ChangeEvent } from 'react';
-import {
-  ArrowLeft,
-  Paperclip,
-  Clock,
-  Upload,
-  Calendar,
-  X,
-  Undo2,
-  Redo2,
-  Bold,
-  Italic,
-  Underline,
-  AlignLeft,
-  List,
-  Quote,
-  Code,
-} from 'lucide-react';
 import { scheduleEmails } from '../lib/api.js';
 import type { User } from '../types/email.js';
 
@@ -187,112 +170,112 @@ export function ComposeModal({
   const remainingCount = recipientsList.length - visibleChips.length;
 
   return (
-    <div className="compose-full-page-view">
-      <div className="compose-top-nav-bar">
-        <div className="compose-title-left">
+    <div className="compose-full-page-view d-flex flex-column flex-grow-1">
+      <div className="compose-top-nav-bar d-flex align-items-center justify-content-between p-3 border-bottom">
+        <div className="compose-title-left d-flex align-items-center gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="compose-back-arrow-btn"
+            className="compose-back-arrow-btn border-0 bg-transparent text-secondary p-1"
             title="Back to inbox"
           >
-            <ArrowLeft size={18} />
+            <i className="fa-solid fa-arrow-left"></i>
           </button>
-          <h2 className="compose-main-title">Compose New Email</h2>
+          <h5 className="compose-main-title mb-0 fw-bold text-dark">Compose New Email</h5>
         </div>
 
-        <div className="compose-top-actions-right">
+        <div className="compose-top-actions-right position-relative d-flex align-items-center gap-3">
           <button
             type="button"
-            className="compose-action-icon-btn with-badge"
+            className="compose-action-icon-btn with-badge position-relative border-0 bg-transparent text-secondary p-2"
             title="Attachments"
           >
-            <Paperclip size={17} />
+            <i className="fa-solid fa-paperclip"></i>
             <span className="icon-tiny-badge">1</span>
           </button>
 
           <button
             type="button"
             onClick={() => setSendLaterOpen(!sendLaterOpen)}
-            className="compose-action-icon-btn"
+            className="compose-action-icon-btn border-0 bg-transparent text-secondary p-2"
             title="Schedule time"
           >
-            <Clock size={17} />
+            <i className="fa-regular fa-clock"></i>
           </button>
 
           <button
             type="button"
             onClick={() => void handleSubmit()}
             disabled={isSubmitting}
-            className="compose-send-later-pill-btn"
+            className="compose-send-later-pill-btn rounded-pill px-3 py-1 fw-semibold"
           >
             {isSubmitting ? 'Scheduling...' : 'Send Later'}
           </button>
 
           {sendLaterOpen && (
-            <div className="send-later-popover-box" ref={sendLaterRef}>
-              <h4 className="popover-title">Send Later</h4>
+            <div className="send-later-popover-box position-absolute bg-white border rounded shadow p-3 z-3" ref={sendLaterRef}>
+              <h6 className="popover-title fw-bold text-dark mb-2">Send Later</h6>
 
-              <div className="popover-date-input-row">
+              <div className="popover-date-input-row d-flex align-items-center border rounded p-2 mb-3">
                 <input
                   type="datetime-local"
                   value={scheduledDateStr}
                   onChange={(e) => setScheduledDateStr(e.target.value)}
-                  className="popover-datetime-field"
+                  className="popover-datetime-field border-0 flex-grow-1 small"
                 />
-                <Calendar size={15} className="popover-calendar-icon" />
+                <i className="fa-regular fa-calendar text-muted ms-2"></i>
               </div>
 
-              <div className="popover-presets-list">
+              <div className="popover-presets-list d-flex flex-column gap-1 mb-3">
                 <button
                   type="button"
                   onClick={() => handlePresetSelect('10s')}
-                  className="popover-preset-item highlight-quick"
+                  className="popover-preset-item highlight-quick border-0 text-start p-2 rounded small"
                 >
                   ⚡ Send in 10 seconds (Quick Test)
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePresetSelect('tomorrow')}
-                  className="popover-preset-item"
+                  className="popover-preset-item border-0 text-start p-2 rounded small text-secondary"
                 >
                   Tomorrow
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePresetSelect('tomorrow-10')}
-                  className="popover-preset-item"
+                  className="popover-preset-item border-0 text-start p-2 rounded small text-secondary"
                 >
                   Tomorrow, 10:00 AM
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePresetSelect('tomorrow-11')}
-                  className="popover-preset-item"
+                  className="popover-preset-item border-0 text-start p-2 rounded small text-secondary"
                 >
                   Tomorrow, 11:00 AM
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePresetSelect('tomorrow-3pm')}
-                  className="popover-preset-item"
+                  className="popover-preset-item border-0 text-start p-2 rounded small text-secondary"
                 >
                   Tomorrow, 3:00 PM
                 </button>
               </div>
 
-              <div className="popover-footer-actions">
+              <div className="popover-footer-actions d-flex align-items-center justify-content-end gap-2">
                 <button
                   type="button"
                   onClick={() => setSendLaterOpen(false)}
-                  className="popover-cancel-btn"
+                  className="popover-cancel-btn border-0 bg-transparent text-secondary small px-2 py-1"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => setSendLaterOpen(false)}
-                  className="popover-done-btn"
+                  className="popover-done-btn btn btn-outline-success btn-sm rounded-pill px-3"
                 >
                   Done
                 </button>
@@ -302,14 +285,14 @@ export function ComposeModal({
         </div>
       </div>
 
-      <div className="compose-fields-card">
-        <div className="compose-field-row">
-          <label className="compose-field-label">From</label>
-          <div className="from-dropdown-container">
+      <div className="compose-fields-card p-4 d-flex flex-column gap-3">
+        <div className="compose-field-row d-flex align-items-center border-bottom pb-2">
+          <label className="compose-field-label text-muted small fw-semibold">From</label>
+          <div className="from-dropdown-container flex-grow-1">
             <select
               value={sender}
               onChange={(e) => setSender(e.target.value)}
-              className="from-select-element"
+              className="from-select-element border-0 fw-semibold text-dark small bg-transparent cursor-pointer"
             >
               <option value={currentUser.email || 'oliver.brown@domain.io'}>
                 {currentUser.email || 'oliver.brown@domain.io'}
@@ -324,24 +307,24 @@ export function ComposeModal({
           </div>
         </div>
 
-        <div className="compose-field-row recipients-row">
-          <label className="compose-field-label">To</label>
-          <div className="recipients-chips-input-area">
+        <div className="compose-field-row recipients-row d-flex align-items-center border-bottom pb-2">
+          <label className="compose-field-label text-muted small fw-semibold">To</label>
+          <div className="recipients-chips-input-area d-flex align-items-center flex-wrap gap-1 flex-grow-1">
             {visibleChips.map((chip, idx) => (
-              <span key={chip} className="green-recipient-chip">
+              <span key={chip} className="green-recipient-chip badge d-inline-flex align-items-center gap-1 rounded-pill fw-normal">
                 <span>{chip}</span>
                 <button
                   type="button"
                   onClick={() => removeRecipient(idx)}
-                  className="chip-remove-btn"
+                  className="chip-remove-btn border-0 bg-transparent p-0 text-success"
                 >
-                  <X size={12} />
+                  <i className="fa-solid fa-xmark"></i>
                 </button>
               </span>
             ))}
 
             {remainingCount > 0 && (
-              <span className="green-recipient-count-chip">
+              <span className="green-recipient-count-chip badge rounded-pill fw-bold">
                 +{remainingCount}
               </span>
             )}
@@ -356,11 +339,11 @@ export function ComposeModal({
                   ? 'recipient@example.com (press Enter or comma)'
                   : 'Add more...'
               }
-              className="recipients-inline-input"
+              className="recipients-inline-input border-0 flex-grow-1 small"
             />
           </div>
 
-          <div className="upload-list-btn-wrapper">
+          <div className="upload-list-btn-wrapper ms-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -371,28 +354,28 @@ export function ComposeModal({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="upload-list-trigger-btn"
+              className="upload-list-trigger-btn border-0 bg-transparent text-success small fw-semibold d-flex align-items-center gap-1"
             >
-              <Upload size={14} />
+              <i className="fa-solid fa-arrow-up-from-bracket"></i>
               <span>Upload List</span>
             </button>
           </div>
         </div>
 
-        <div className="compose-field-row">
-          <label className="compose-field-label">Subject</label>
+        <div className="compose-field-row d-flex align-items-center border-bottom pb-2">
+          <label className="compose-field-label text-muted small fw-semibold">Subject</label>
           <input
             type="text"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Subject"
-            className="compose-subject-input"
+            className="compose-subject-input border-0 flex-grow-1 small"
           />
         </div>
 
-        <div className="compose-field-row limits-delay-row">
-          <div className="limits-subgroup">
-            <label className="compose-field-label">
+        <div className="compose-field-row limits-delay-row d-flex align-items-center gap-4">
+          <div className="limits-subgroup d-flex align-items-center gap-2">
+            <label className="compose-field-label text-muted small fw-semibold mb-0" style={{ width: 'auto' }}>
               Delay between 2 emails
             </label>
             <input
@@ -401,62 +384,64 @@ export function ComposeModal({
               max="600"
               value={delaySeconds}
               onChange={(e) => setDelaySeconds(Math.min(600, Math.max(0, Number(e.target.value))))}
-              className="small-number-box-input"
+              className="small-number-box-input form-control form-control-sm text-center fw-bold"
+              style={{ width: 64 }}
             />
-            <span className="unit-label-text">sec (max 10m)</span>
+            <span className="unit-label-text text-muted small">sec (max 10m)</span>
           </div>
 
-          <div className="limits-subgroup">
-            <label className="compose-field-label">Hourly Limit</label>
+          <div className="limits-subgroup d-flex align-items-center gap-2">
+            <label className="compose-field-label text-muted small fw-semibold mb-0" style={{ width: 'auto' }}>Hourly Limit</label>
             <input
               type="number"
               min="1"
               max="100"
               value={hourlyLimit}
               onChange={(e) => setHourlyLimit(Math.min(100, Math.max(1, Number(e.target.value))))}
-              className="small-number-box-input"
+              className="small-number-box-input form-control form-control-sm text-center fw-bold"
+              style={{ width: 64 }}
             />
-            <span className="unit-label-text">/ hr (max 100)</span>
+            <span className="unit-label-text text-muted small">/ hr (max 100)</span>
           </div>
         </div>
 
-        <div className="compose-editor-box">
-          <div className="editor-formatting-toolbar">
-            <button type="button" className="toolbar-btn" title="Undo">
-              <Undo2 size={14} />
+        <div className="compose-editor-box border rounded overflow-hidden">
+          <div className="editor-formatting-toolbar d-flex align-items-center gap-2 p-2 border-bottom bg-white">
+            <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="Undo">
+              <i className="fa-solid fa-rotate-left"></i>
             </button>
-            <button type="button" className="toolbar-btn" title="Redo">
-              <Redo2 size={14} />
+            <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="Redo">
+              <i className="fa-solid fa-rotate-right"></i>
             </button>
             <span className="toolbar-divider" />
             <button
               type="button"
-              className="toolbar-btn text-bold"
+              className="toolbar-btn border-0 bg-transparent text-secondary p-1 fw-bold"
               title="Font"
             >
               Tt
             </button>
-            <button type="button" className="toolbar-btn" title="Bold">
-              <Bold size={14} />
+            <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="Bold">
+              <i className="fa-solid fa-bold"></i>
             </button>
-            <button type="button" className="toolbar-btn" title="Italic">
-              <Italic size={14} />
+            <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="Italic">
+              <i className="fa-solid fa-italic"></i>
             </button>
-            <button type="button" className="toolbar-btn" title="Underline">
-              <Underline size={14} />
+            <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="Underline">
+              <i className="fa-solid fa-underline"></i>
             </button>
             <span className="toolbar-divider" />
-            <button type="button" className="toolbar-btn" title="Align">
-              <AlignLeft size={14} />
+            <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="Align">
+              <i className="fa-solid fa-align-left"></i>
             </button>
-            <button type="button" className="toolbar-btn" title="List">
-              <List size={14} />
+            <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="List">
+              <i className="fa-solid fa-list-ul"></i>
             </button>
-            <button type="button" className="toolbar-btn" title="Quote">
-              <Quote size={14} />
+            <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="Quote">
+              <i className="fa-solid fa-quote-left"></i>
             </button>
-            <button type="button" className="toolbar-btn" title="Code">
-              <Code size={14} />
+            <button type="button" className="toolbar-btn border-0 bg-transparent text-secondary p-1" title="Code">
+              <i className="fa-solid fa-code"></i>
             </button>
           </div>
 
@@ -465,7 +450,7 @@ export function ComposeModal({
             onChange={(e) => setBody(e.target.value)}
             placeholder="Type Your Reply..."
             rows={12}
-            className="compose-body-textarea"
+            className="compose-body-textarea form-control border-0 p-3"
           />
         </div>
       </div>
