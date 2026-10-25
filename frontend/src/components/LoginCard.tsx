@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { API_BASE, loginDemoUser, loginEmailUser } from '../lib/api.js';
+import { API_BASE, loginEmailUser } from '../lib/api.js';
 import type { User } from '../types/email.js';
 
 interface LoginCardProps {
@@ -25,18 +25,6 @@ export function LoginCard({ onLoginSuccess, onError }: LoginCardProps) {
       onLoginSuccess(user);
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    try {
-      const user = await loginDemoUser();
-      onLoginSuccess(user);
-    } catch (err) {
-      onError(err instanceof Error ? err.message : 'Demo login failed');
     } finally {
       setLoading(false);
     }
@@ -90,17 +78,6 @@ export function LoginCard({ onLoginSuccess, onError }: LoginCardProps) {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-
-        <div className="demo-login-wrapper text-center mt-3">
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            disabled={loading}
-            className="demo-login-btn btn btn-link text-success text-decoration-none small"
-          >
-            One-Click Demo Login (Oliver Brown)
-          </button>
-        </div>
       </div>
     </div>
   );
